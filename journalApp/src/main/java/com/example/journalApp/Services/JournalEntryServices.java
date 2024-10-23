@@ -33,9 +33,8 @@ public class JournalEntryServices {
             // saving the new entry in the specific user collection
             User user = userServices.findByUsername(username);
             user.getJournalEntryList().add(savedEntry);  // saving the reference of the journal collection inside users
-            userServices.saveUser(user);
-        }
-        catch (Exception e) {
+            userServices.saveUserWithoutPasswordEncoding(user);
+        } catch (Exception e) {
             System.out.println(e);
             throw new RuntimeException("Error occurred while creating a new entry :: " + e);
         }
@@ -54,14 +53,27 @@ public class JournalEntryServices {
         return journalEntryRepository.findById(journalId);
     }
 
-    public void deleteEntryById(ObjectId journalId, String username) {
-        // at first delete from user collection, because it has the ref of the journal collection
-        User user = userServices.findByUsername(username);
-        user.getJournalEntryList().removeIf(x -> x.getId().equals(journalId));
-        userServices.saveUser(user);
-
-        // once the ref from user table is deleted, then only delete the actual row
-        journalEntryRepository.deleteById(journalId);
+    @Transactional
+    public boolean deleteEntryById(ObjectId journalId, String username) {
+        boolean isRemoved = false;
+        try {
+            // at first delete from user collection, because it has the ref of the journal collection
+            User user = userServices.findByUsername(username);
+            isRemoved = user.getJournalEntryList().removeIf(x -> x.getId().equals(journalId));
+            if (isRemoved) {
+                userServices.saveUserWithoutPasswordEncoding(user);
+                // once the ref from user table is deleted, then only delete the actual row
+                journalEntryRepository.deleteById(journalId);
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+            throw new RuntimeException("Error occurred while deleting an entry :: " + e);
+        }
+        return isRemoved;
     }
+
+//    public List<JournalEntry> findJournalsByUsername(String username) {
+//
+//    }
 
 }

@@ -1,11 +1,14 @@
 package com.example.journalApp.Controller;
 
 import com.example.journalApp.Entity.User;
+import com.example.journalApp.Repository.UserRepository;
 import com.example.journalApp.Services.UserServices;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,25 +21,9 @@ public class UserController {
     @Autowired
     private UserServices userServices;
 
-    @GetMapping("all-users")
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userServices.getAllUsers();
-        if (users != null && !users.isEmpty()) {
-            return new ResponseEntity<>(users, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
+    @Autowired
+    private UserRepository userRepository;
 
-    @PostMapping("add-user")
-    public ResponseEntity<User> createUser(@RequestBody User newUser) {
-        try {
-            userServices.saveNewUser(newUser);
-            return new ResponseEntity<>(newUser, HttpStatus.CREATED);
-        }
-        catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
-    }
 
     @GetMapping("id/{userId}")
     public ResponseEntity<User> getUserById(@PathVariable ObjectId userId) {
@@ -46,41 +33,34 @@ public class UserController {
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PutMapping("update-user/{username}")
-    public ResponseEntity<?> updateUserDetails(@PathVariable String username, @RequestBody User updatedUserDetails) {
+    @PutMapping("update-user")
+    public ResponseEntity<?> updateUserDetails(@RequestBody User updatedUserDetails) {
         try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication.getName();
+
             User oldUserDetails = userServices.findByUsername(username);
-            if (oldUserDetails != null) {
-                oldUserDetails.setUsername(
-                        updatedUserDetails.getUsername() != null && !updatedUserDetails.getUsername().isEmpty()
-                                ? updatedUserDetails.getUsername() : oldUserDetails.getUsername()
-                );
+            oldUserDetails.setUsername(updatedUserDetails.getUsername());
+            oldUserDetails.setPassword(updatedUserDetails.getPassword());
 
-                oldUserDetails.setPassword(
-                        updatedUserDetails.getPassword() != null && !updatedUserDetails.getPassword().isEmpty()
-                                ? updatedUserDetails.getPassword() : oldUserDetails.getPassword()
-                );
-            }
-
-            userServices.saveUser(oldUserDetails);
+            userServices.saveNewUser(oldUserDetails);
             return new ResponseEntity<>(oldUserDetails, HttpStatus.OK);
-        }
-        catch (Exception e) {
-            return new ResponseEntity<>("User with username '" + username + "' doesn't exist.", HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            // unable to send "user doesn't exist" to postman output when putting wrong details
+            return new ResponseEntity<>("User doesn't exist.", HttpStatus.BAD_REQUEST);
         }
     }
 
-//    @DeleteMapping("id/{userId}")
-//    public ResponseEntity<?> deleteUser(@PathVariable ObjectId userId) {
-//        // <?> is like a wildcard, which means we can pass any type of data.
-//        try {
-//            userServices.deleteUserById(userId);
-//            return new ResponseEntity<>("Entry is deleted with journalId :: " + userId.toString(),
-//                    HttpStatus.OK);
-//        }
-//        catch (Exception e) {
-//            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-//        }
-//    }
+    @DeleteMapping("delete-user")
+    public ResponseEntity<?> deleteUser() {
+        // <?> is like a wildcard, which means we can pass any type of data.
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            userRepository.deleteByUsername(authentication.getName());
+            return new ResponseEntity<>("User is successfully deleted.", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("User not found.", HttpStatus.NO_CONTENT);
+        }
+    }
 
 }

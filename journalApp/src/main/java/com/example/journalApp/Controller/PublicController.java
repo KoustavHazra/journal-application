@@ -11,22 +11,22 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/public")
 public class PublicController {
 
-//    @Autowired
-//    private UserServices userServices;
+    @Autowired
+    private UserServices userServices;
 
     @GetMapping("/health-check")
     public String checkHealth() {
         return "System started running on port 8080!";
     }
 
-//    @PostMapping("add-user")
-//    public ResponseEntity<User> createUser(@RequestBody User newUser) {
-//        try {
-//            userServices.saveNewUser(newUser);
-//            return new ResponseEntity<>(newUser, HttpStatus.CREATED);
-//        }
-//        catch (Exception e) {
-//            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-//        }
-//    }
+    @PostMapping("add-user")
+    public ResponseEntity<User> createUser(@RequestBody User newUser) {
+        try {
+            userServices.saveNewUser(newUser);
+            return new ResponseEntity<>(newUser, HttpStatus.CREATED);
+        }
+        catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
 }
