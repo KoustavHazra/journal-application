@@ -4,6 +4,8 @@ import com.example.journalApp.Entity.JournalEntry;
 import com.example.journalApp.Entity.User;
 import com.example.journalApp.Repository.JournalEntryRepository;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,8 @@ public class JournalEntryServices {
     @Autowired
     private UserServices userServices;
 
+    private static final Logger logger = LoggerFactory.getLogger(JournalEntryServices.class);
+
     // WHEN USER NOT EXISTS -- THAT SCENARIO IS NOT HANDLED !!
 
     @Transactional
@@ -35,7 +39,7 @@ public class JournalEntryServices {
             user.getJournalEntryList().add(savedEntry);  // saving the reference of the journal collection inside users
             userServices.saveUserWithoutPasswordEncoding(user);
         } catch (Exception e) {
-            System.out.println(e);
+            logger.info("logged");
             throw new RuntimeException("Error occurred while creating a new entry :: " + e);
         }
     }
@@ -77,3 +81,18 @@ public class JournalEntryServices {
 //    }
 
 }
+
+/*
+We are going to use the Log4j framework in our application. But instead of that we are importing slf4j.
+
+It is because slf4j is an abstraction of the Log4j framework. So in the Log4j framework all the code is
+implemented, and we are using slf4j to use those implementation.
+
+Simple Logging Facade for Java = slf4j (Facade means abstraction).
+
+
+ */
+
+
+
+
