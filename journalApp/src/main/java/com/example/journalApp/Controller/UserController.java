@@ -3,6 +3,8 @@ package com.example.journalApp.Controller;
 import com.example.journalApp.Entity.User;
 import com.example.journalApp.Repository.UserRepository;
 import com.example.journalApp.Services.UserServices;
+import com.example.journalApp.Services.WeatherService;
+import com.example.journalApp.api_response.WeatherAPIResponse;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,8 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private WeatherService weatherService;
 
     @GetMapping("id/{userId}")
     public ResponseEntity<User> getUserById(@PathVariable ObjectId userId) {
@@ -58,6 +62,23 @@ public class UserController {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             userRepository.deleteByUsername(authentication.getName());
             return new ResponseEntity<>("User is successfully deleted.", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("User not found.", HttpStatus.NO_CONTENT);
+        }
+    }
+
+    @GetMapping()
+    public ResponseEntity<?> greetings() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            WeatherAPIResponse weather = weatherService.getWeather("Mumbai");
+
+            String response = "Hey, welcome " + authentication.getName() + ". ";
+            if (weather != null) {
+                response = response + "Today at Mumbai it feels like " + weather.getCurrent().getFeelslike() + "°.";
+            }
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("User not found.", HttpStatus.NO_CONTENT);
         }
