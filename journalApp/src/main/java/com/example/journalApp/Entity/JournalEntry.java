@@ -1,6 +1,7 @@
 package com.example.journalApp.Entity;
 
 
+import com.example.journalApp.Enums.Sentiment;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
@@ -21,4 +22,5 @@ public class JournalEntry {  // @Document makes every entry of JournalEntry as a
     private String title;
     private String content;
     private LocalDateTime date;
+    private Sentiment sentiment;
 }

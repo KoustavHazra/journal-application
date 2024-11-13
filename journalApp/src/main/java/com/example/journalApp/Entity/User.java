@@ -14,6 +14,8 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     private ObjectId id;
@@ -26,6 +28,9 @@ public class User {
 
     @NonNull
     private String password;
+
+    private String email;
+    private boolean sentimentAnalysis;
 
     @DBRef
     private List<JournalEntry> journalEntryList = new ArrayList<>();
