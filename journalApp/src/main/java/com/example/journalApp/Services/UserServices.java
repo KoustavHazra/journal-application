@@ -141,3 +141,113 @@ we can do this for a specific class as well.
 
 
  */
+
+
+package com.example.product.service;
+
+import com.example.product.entity.Product;
+import com.example.product.exception.CustomFileException;
+import com.example.product.repository.ProductRepository;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class ProductService {
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    public void processExcelFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new CustomFileException("The uploaded file is empty");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || (!contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))) {
+            throw new CustomFileException("Invalid file format. Only Excel files are supported.");
+        }
+
+        try (InputStream inputStream = file.getInputStream();
+             Workbook workbook = new XSSFWorkbook(inputStream)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+            if (sheet.getPhysicalNumberOfRows() == 0) {
+                throw new CustomFileException("The Excel file is empty.");
+            }
+
+            List<Product> products = new ArrayList<>();
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) { // Skip header row
+                    continue;
+                }
+
+                Product product = parseRowToProduct(row);
+                products.add(product);
+            }
+
+            productRepository.saveAll(products);
+
+        } catch (Exception e) {
+            throw new CustomFileException("Error processing Excel file: " + e.getMessage());
+        }
+    }
+
+    private Product parseRowToProduct(Row row) {
+        try {
+            String productName = getCellValue(row.getCell(0));
+            String description = getCellValue(row.getCell(1));
+
+            if (productName == null || productName.isEmpty()) {
+                throw new CustomFileException("Product name cannot be empty in row " + (row.getRowNum() + 1));
+            }
+
+            Product product = new Product();
+            product.setProductName(productName);
+            product.setDescription(description);
+
+            return product;
+
+        } catch (Exception e) {
+            throw new CustomFileException("Error parsing row " + (row.getRowNum() + 1) + ": " + e.getMessage());
+        }
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+
+        if (cell.getCellType() == CellType.STRING) {
+            return cell.getStringCellValue();
+        } else if (cell.getCellType() == CellType.NUMERIC) {
+            return String.valueOf(cell.getNumericCellValue());
+        }
+
+        return null;
+    }
+}
+
+
+
+
+
+package com.example.product.exception;
+
+public class CustomFileException extends RuntimeException {
+    public CustomFileException(String message) {
+        super(message);
+    }
+}
+
+
+
+
+
+
